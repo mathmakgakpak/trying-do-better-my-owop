@@ -193,14 +193,14 @@ if ((0, _misc.storageEnabled)()) {
 var options = exports.options = (0, _misc.propertyDefaults)(userOptions, {
 	serverAddress: [{
 		default: true,
-		title: 'mathias377 server',
+		title: 'Official server',
 		proto: 'old',
-		url: 'ws://owopforfun.herokuapp.com'
+		url: 'ws://localhost:7000'
 	}, {
 		default: false,
-		title: 'mathias377 server',
+		title: 'Localhost',
 		proto: 'old',
-		url: 'ws://owopforfun.herokuapp.com',
+		url: 'ws://localhost:7000',
 		maxRetries: 1
 	}], // The server address that websockets connect to
 	fallbackFps: 30, // Fps used if requestAnimationFrame is not supported
@@ -654,11 +654,11 @@ var playerList = exports.playerList = {};
 var playerListTable = exports.playerListTable = document.createElement("table");
 var playerListWindow = exports.playerListWindow = new _windowsys.GUIWindow('Players', { closeable: true }, function (wdow) {
 	var tableHeader = document.createElement("tr");
-	tableHeader.innerHTML = "<th>Id</th><th>X</th><th>Y</th>";
+	tableHeader.innerHTML = "<th>Id</th><th>X</th><th>Y</th><th>R</th><th>G</th><th>B</th><th>Color</th><th>Tool</th>";
 	playerListTable.appendChild(tableHeader);
 	wdow.container.appendChild(playerListTable);
 	wdow.container.id = "player-list";
-}).move(window.innerWidth - 240, 32);
+}).move(window.innerWidth - 340, 32);
 
 function getNewWorldApi() {
 	var obj = {};
@@ -861,61 +861,109 @@ function updateXYDisplay(x, y) {
 }
 
 function updatePlayerCount(count) {
-	elements.playerCountDisplay.innerHTML = count + ' cursor' + (count !== 1 ? 's online' : ' online');
+	elements.playerCountDisplay.innerHTML = count + ' player' + (count !== 1 ? 's online' : ' online');
 }
-/*
-function openServerSelector() {
-	windowsys.addWindow(new GUIWindow(0, 0, 250, 60, "Select a server", {
-			centered: true
-		}, wdow => {
 
-		wdow.addObj(mkHTML("button", {
-			innerHTML: "Original server",
-			style: "width: 100%; height: 50%",
-			onclick: () => {
-				w.options.serverAddress = "ws://ourworldofpixels.com:443";
-				w.net.connect();
-				win.wm.delWindow(win);
-				w.options.oldserver = true;
+function openServerSelector() {
+	OWOP.windowSys.addWindow(new OWOP.windowSys.class.window("Server selector", {
+		centered: true,
+		closable: true, //for the moment
+		movable: true
+	}, function (wdow) {
+		var buttonStyle = "background-color: rgba(255,255,255,0.7)";
+		wdow.frame.style.width = "13%";
+		wdow.frame.style.height = "25%";
+		wdow.frame.style.border = "3px solid currentColor";
+		wdow.frame.style.backgroundColor = "rgba(255,255,255,0.7)";
+		wdow.frame.style.padding = "5px";
+		wdow.frame.querySelector("span").style.color = wdow.container.color = "currentColor";
+		wdow.container.style.border = wdow.container.style.backgroundColor = wdow.container.style.margin = wdow.frame.querySelector("span").style.textShadow = "unset";
+
+		function makeHTML(tag, opts) {
+			var elm = document.createElement(tag);
+			for (var i in opts) {
+				elm[i] = opts[i];
+			}
+			return elm;
+		}
+		wdow.addObj(makeHTML("textarea", {
+			placeholder: "world name",
+			id: "worldname"
+		}));
+
+		wdow.addObj(makeHTML("br", {}));
+
+		wdow.addObj(makeHTML("button", {
+			innerHTML: "mathias377's server",
+			style: buttonStyle,
+			onclick: function onclick() {
+				if (OWOP.net.protocol != undefined) if (OWOP.net.protocol.ws.readyState != 3) OWOP.net.protocol.ws.close();
+				setTimeout(function () {
+					OWOP.options.serverAddress[0].url = "ws://89.108.64.145:5676";
+					var worldname = document.getElementById("worldname").value.length > 0 ? document.getElementById("worldname").value : "main";
+					OWOP.net.connect(OWOP.options.serverAddress[0], worldname);
+					wdow.close();
+				}, 500);
 			}
 		}));
-		wdow.addObj(mkHTML("button", {
-			innerHTML: "Beta server",
-			style: "width: 100%; height: 50%",
-			onclick: () => {
-				w.options.serverAddress = "ws://vanillaplay.ddns.net:25565";
-				w.net.connect();
-				win.wm.delWindow(win);
+
+		wdow.addObj(makeHTML("br", {}));
+
+		wdow.addObj(makeHTML("button", {
+			innerHTML: "localhost:7000",
+			style: buttonStyle,
+			onclick: function onclick() {
+				if (OWOP.net.protocol != undefined) if (OWOP.net.protocol.ws.readyState != 3) OWOP.net.protocol.ws.close();
+				setTimeout(function () {
+					OWOP.options.serverAddress[0].url = "ws://localhost:7000";
+					var worldname = document.getElementById("worldname").value.length > 0 ? document.getElementById("worldname").value : "main";
+					OWOP.net.connect(OWOP.options.serverAddress[0], worldname);
+					wdow.close();
+				}, 500);
 			}
 		}));
-		wdow.addObj(mkHTML("button", {
-			innerHTML: "Localhost",
-			style: "width: 100%; height: 50%",
-			onclick: () => {
-				w.options.serverAddress = "ws://localhost:25565";
-				w.net.connect();
-				win.wm.delWindow(win);
-			}
+
+		wdow.addObj(makeHTML("br", {}));
+
+		wdow.addObj(makeHTML("textarea", {
+			placeholder: "Enter server address with ws/wss",
+			id: "serveraddress"
 		}));
-		wdow.addObj(mkHTML("button", {
-			innerHTML: "Custom server",
-			style: "width: 100%; height: 50%",
-			onclick: function() {
-				var i = win.wm.addWindow(
-					new UtilInput("Enter server address", "Type here...", "text", function(addr) {
-						w.options.serverAddress = addr;
-						w.net.connect();
-						win.close();
-					}.bind({w: w, win: win}))
-				);
-				win.onclose = function() {
-					i.getWindow().close();
+
+		wdow.addObj(makeHTML("br", {}));
+
+		wdow.addObj(makeHTML("button", {
+			innerHTML: "custom server",
+			style: buttonStyle,
+			onclick: function onclick() {
+				var worldname = document.getElementById("worldname").value.length > 0 ? document.getElementById("worldname").value : "main";
+				var serveraddres = document.getElementById("serveraddress").value;
+				if (serveraddres.includes("ws")) {
+					if (OWOP.net.protocol != undefined) if (OWOP.net.protocol.ws.readyState != 3) OWOP.net.protocol.ws.close();
+					setTimeout(function () {
+						OWOP.options.serverAddress[0].url = serveraddres;
+						OWOP.net.connect(OWOP.options.serverAddress[0], worldname);
+						wdow.close();
+					}, 500);
+				} else {
+					document.getElementById("thereisnoaddress").innerHTML = "Please include ws/wss";
 				}
-			}.bind({w: this, win: wdow})
+			}
+		}));
+
+		wdow.addObj(makeHTML("br", {}));
+
+		wdow.addObj(makeHTML("div", {
+			style: "color: red",
+			id: "thereisnoaddress"
+		}));
+		wdow.addObj(makeHTML("div", {
+			style: "color: gray",
+			innerHTML: "Made by mathias377"
 		}));
 	}));
 }
-*/
+
 function logoMakeRoom(bool) {
 	elements.loadUl.style.transform = bool ? "translateY(-75%) scale(0.5)" : "";
 }
@@ -1382,7 +1430,7 @@ function init() {
 
 	updateXYDisplay(0, 0);
 
-	var worldName = decodeURIComponent(window.location.hash.slice(1));
+	var worldName = decodeURIComponent(window.location.pathname.slice(1));
 	if (worldName[0] === '/') {
 		worldName = worldName.slice(1);
 	}
@@ -1414,10 +1462,10 @@ function init() {
 		};
 	}(_conf.options.serverAddress);
 
-	retryingConnect(serverGetter, misc.urlWorldName);
+	openServerSelector();
 
 	elements.reconnectBtn.onclick = function () {
-		return retryingConnect(serverGetter, misc.urlWorldName);
+		return openServerSelector();
 	};
 
 	misc.tickInterval = setInterval(tick, 1000 / _conf.options.tickSpeed);
@@ -2441,7 +2489,7 @@ var toolSelected = null;
 	[0xF4, 0xF4, 0xF4], [0x93, 0xB6, 0xC1], [0x55, 0x71, 0x85], [0x32, 0x40, 0x56]
 ];*/
 // ENDESGA 16 palette
-var palette = [[0x00, 0x00, 0x00], [0xFF, 0xFF, 0xFF], [0xE4, 0xA6, 0x72], [0xB8, 0x6F, 0x50], [0x74, 0x3F, 0x39], [0x3F, 0x28, 0x32], [0x9E, 0x28, 0x35], [0xE5, 0x3B, 0x44], [0xFB, 0x92, 0x2B], [0xFF, 0xE7, 0x62], [0x63, 0xC6, 0x4D], [0x32, 0x73, 0x45], [0x19, 0x3D, 0x3F], [0x4F, 0x67, 0x81], [0xAF, 0xBF, 0xD2], [0x2C, 0xE8, 0xF4], [0x04, 0x84, 0xD1]];
+var palette = [[0x00, 0x00, 0x00], [0xE4, 0xA6, 0x72], [0xB8, 0x6F, 0x50], [0x74, 0x3F, 0x39], [0x3F, 0x28, 0x32], [0x9E, 0x28, 0x35], [0xE5, 0x3B, 0x44], [0xFB, 0x92, 0x2B], [0xFF, 0xE7, 0x62], [0x63, 0xC6, 0x4D], [0x32, 0x73, 0x45], [0x19, 0x3D, 0x3F], [0x4F, 0x67, 0x81], [0xAF, 0xBF, 0xD2], [0xFF, 0xFF, 0xFF], [0x2C, 0xE8, 0xF4], [0x04, 0x84, 0xD1]];
 var paletteIndex = 0;
 
 var undoHistory = exports.undoHistory = [];
@@ -2875,7 +2923,7 @@ function isConnected() {
 
 function connect(server, worldName) {
 	_global.eventSys.emit(_conf.EVENTS.net.connecting, server);
-	net.connection = new WebSocket('wss://owopforfun.herokuapp.com');
+	net.connection = new WebSocket(server.url);
 	net.connection.binaryType = "arraybuffer";
 	net.currentServer = server;
 	net.protocol = new server.proto.class(net.connection, worldName);
@@ -3231,7 +3279,7 @@ _global.eventSys.once(_conf.EVENTS.misc.toolsRendered, function () {
 				case 4:
 					if (event.ctrlKey) {
 						usedButtons |= 4;
-						var color = _OWOP.world.getPixel(mouse.tileX, mouse.tileY);
+						var color = OWOP.world.getPixel(mouse.tileX, mouse.tileY);
 						if (color) {
 							OWOP.player.selectedColor = color;
 						}
@@ -3244,29 +3292,31 @@ _global.eventSys.once(_conf.EVENTS.misc.toolsRendered, function () {
 			lastX = null;
 			lastY = null;
 		});
-		if (OWOP.player.rank == 3) {
-			var brDiamWin = OWOP.windowSys.addWindow(new OWOP.windowSys.class.window('Brush diameter', {}, function (win) {
-				win.container.title = 'Sets brush diameter. (duh)';
-				win.container.style.height = '16px';
-				win.container.style.overflow = 'hidden';
+		OWOP.on(_conf.EVENTS.net.sec.rank, function (rank) {
+			if (rank == 3) {
+				var brDiamWin = OWOP.windowSys.addWindow(new OWOP.windowSys.class.window('Brush diameter', {}, function (win) {
+					win.container.title = 'Sets brush diameter. (duh)';
+					win.container.style.height = '16px';
+					win.container.style.overflow = 'hidden';
 
-				var brDiamElm = OWOP.util.mkHTML('span', { innerHTML: brDiameter });
-				win.addObj(brDiamElm);
-				var Rbar = OWOP.util.mkHTML('input', {
-					type: 'range', style: '-moz-appearance:none;-webkit-appearance:none;appearance:none;height:6px;outline:none;float:right;',
-					min: 2, max: 16,
-					value: brDiameter,
-					oninput: function oninput() {
-						brDiameter = this.value;
-						brDiamElm.innerHTML = this.value;
-					}, ondblclick: function ondblclick() {
-						this.value = 3;
-						this.onchange();
-					}
-				});
-				win.addObj(Rbar);
-			}).move(945, 32));
-		}
+					var brDiamElm = OWOP.util.mkHTML('span', { innerHTML: brDiameter });
+					win.addObj(brDiamElm);
+					var Rbar = OWOP.util.mkHTML('input', {
+						type: 'range', style: '-moz-appearance:none;-webkit-appearance:none;appearance:none;height:6px;outline:none;float:right;',
+						min: 2, max: 16,
+						value: brDiameter,
+						oninput: function oninput() {
+							brDiameter = this.value;
+							brDiamElm.innerHTML = this.value;
+						}, ondblclick: function ondblclick() {
+							this.value = 3;
+							this.onchange();
+						}
+					});
+					win.addObj(Rbar);
+				}).move(945, 32));
+			}
+		});
 	}));
 
 	//Text Tool
@@ -3450,6 +3500,25 @@ _global.eventSys.once(_conf.EVENTS.misc.toolsRendered, function () {
 
 	//Area Erase
 	addTool(new Tool('Area Erase', _tool_renderer.cursors.areaerase, _Fx.PLAYERFX.RECT_SELECT_ALIGNED(16), _conf.RANK.MODERATOR, function (tool) {
+		function fillChunk(chunkX, chunkY, c) {
+			var color = c[2] << 16 | c[1] << 8 | c[0];
+			var chunk = _main2.misc.world.getChunkAt(chunkX, chunkY);
+			if (chunk) {
+				var empty = true;
+				firstLoop: for (var y = 0; y < _conf.protocol.chunkSize; y++) {
+					for (var x = 0; x < _conf.protocol.chunkSize; x++) {
+						if ((chunk.get(x, y) & 0xFFFFFF) != color) {
+							empty = false;
+							break firstLoop;
+						}
+					}
+				}
+				if (!empty) {
+					chunk.set(color);
+					_networking.net.protocol.setChunk(chunkX, chunkY, new Array(256).fill(color));
+				}
+			}
+		}
 		function drawText(ctx, str, x, y, centered) {
 			ctx.strokeStyle = "#000000", ctx.fillStyle = "#FFFFFF", ctx.lineWidth = 2.5, ctx.globalAlpha = 0.5;
 			if (centered) {
@@ -3620,9 +3689,9 @@ _global.eventSys.once(_conf.EVENTS.misc.toolsRendered, function () {
 					for (var i = x; i < x + w; i++) {
 						for (var j = y; j < y + h; j++) {
 							if (mouse.buttons & 1) {
-								OWOP.net.protocol.clearChunk(i, j, OWOP.player.selectedColor);
+								fillChunk(i, j, OWOP.player.selectedColor);
 							} else {
-								OWOP.net.protocol.clearChunk(i, j, [255, 255, 255]);
+								fillChunk(i, j, [255, 255, 255]);
 							}
 						}
 					}
@@ -3635,7 +3704,7 @@ _global.eventSys.once(_conf.EVENTS.misc.toolsRendered, function () {
 	}));
 
 	// Erase/Fill tool
-	addTool(new Tool('Eraser', _tool_renderer.cursors.erase, _Fx.PLAYERFX.RECT_SELECT_ALIGNED(16), _conf.RANK.MODERATOR, function (tool) {
+	addTool(new Tool('Eraser', _tool_renderer.cursors.erase, _Fx.PLAYERFX.RECT_SELECT_ALIGNED(16), _conf.RANK.ADMIN, function (tool) {
 		function fillChunk(chunkX, chunkY, c) {
 			var color = c[2] << 16 | c[1] << 8 | c[0];
 			var chunk = _main2.misc.world.getChunkAt(chunkX, chunkY);
@@ -4099,7 +4168,6 @@ _global.eventSys.once(_conf.EVENTS.misc.toolsRendered, function () {
 		});
 	}));
 
-	//protect tool
 	addTool(new Tool('Protect', _tool_renderer.cursors.shield, _Fx.PLAYERFX.RECT_SELECT_ALIGNED(16, "#000000"), _conf.RANK.MODERATOR, function (tool) {
 		tool.setFxRenderer(function (fx, ctx, time) {
 			var x = fx.extra.player.x;
@@ -4136,7 +4204,6 @@ _global.eventSys.once(_conf.EVENTS.misc.toolsRendered, function () {
 		});
 	}));
 
-	//area protect tool
 	addTool(new Tool('Area Protect', _tool_renderer.cursors.selectprotect, _Fx.PLAYERFX.NONE, _conf.RANK.MODERATOR, function (tool) {
 		tool.setFxRenderer(function (fx, ctx, time) {
 			if (!fx.extra.isLocalPlayer) return 1;
@@ -4505,7 +4572,6 @@ _global.eventSys.once(_conf.EVENTS.misc.toolsRendered, function () {
 		});
 	}));
 
-	//paste tool
 	addTool(new Tool('Paste', _tool_renderer.cursors.paste, _Fx.PLAYERFX.NONE, _conf.RANK.ADMIN, function (tool) {
 		tool.setFxRenderer(function (fx, ctx, time) {
 			var z = _canvas_renderer2.camera.zoom;
@@ -5878,8 +5944,9 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
 /***/ }),
 /* 17 */
-/***/ (function(module, exports) {
+/***/ (function(module, exports, __webpack_require__) {
 
+"use strict";
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -5901,9 +5968,39 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 // USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+
+
+var R = typeof Reflect === 'object' ? Reflect : null
+var ReflectApply = R && typeof R.apply === 'function'
+  ? R.apply
+  : function ReflectApply(target, receiver, args) {
+    return Function.prototype.apply.call(target, receiver, args);
+  }
+
+var ReflectOwnKeys
+if (R && typeof R.ownKeys === 'function') {
+  ReflectOwnKeys = R.ownKeys
+} else if (Object.getOwnPropertySymbols) {
+  ReflectOwnKeys = function ReflectOwnKeys(target) {
+    return Object.getOwnPropertyNames(target)
+      .concat(Object.getOwnPropertySymbols(target));
+  };
+} else {
+  ReflectOwnKeys = function ReflectOwnKeys(target) {
+    return Object.getOwnPropertyNames(target);
+  };
+}
+
+function ProcessEmitWarning(warning) {
+  if (console && console.warn) console.warn(warning);
+}
+
+var NumberIsNaN = Number.isNaN || function NumberIsNaN(value) {
+  return value !== value;
+}
+
 function EventEmitter() {
-  this._events = this._events || {};
-  this._maxListeners = this._maxListeners || undefined;
+  EventEmitter.init.call(this);
 }
 module.exports = EventEmitter;
 
@@ -5911,276 +6008,392 @@ module.exports = EventEmitter;
 EventEmitter.EventEmitter = EventEmitter;
 
 EventEmitter.prototype._events = undefined;
+EventEmitter.prototype._eventsCount = 0;
 EventEmitter.prototype._maxListeners = undefined;
 
 // By default EventEmitters will print a warning if more than 10 listeners are
 // added to it. This is a useful default which helps finding memory leaks.
-EventEmitter.defaultMaxListeners = 10;
+var defaultMaxListeners = 10;
+
+Object.defineProperty(EventEmitter, 'defaultMaxListeners', {
+  enumerable: true,
+  get: function() {
+    return defaultMaxListeners;
+  },
+  set: function(arg) {
+    if (typeof arg !== 'number' || arg < 0 || NumberIsNaN(arg)) {
+      throw new RangeError('The value of "defaultMaxListeners" is out of range. It must be a non-negative number. Received ' + arg + '.');
+    }
+    defaultMaxListeners = arg;
+  }
+});
+
+EventEmitter.init = function() {
+
+  if (this._events === undefined ||
+      this._events === Object.getPrototypeOf(this)._events) {
+    this._events = Object.create(null);
+    this._eventsCount = 0;
+  }
+
+  this._maxListeners = this._maxListeners || undefined;
+};
 
 // Obviously not all Emitters should be limited to 10. This function allows
 // that to be increased. Set to zero for unlimited.
-EventEmitter.prototype.setMaxListeners = function(n) {
-  if (!isNumber(n) || n < 0 || isNaN(n))
-    throw TypeError('n must be a positive number');
+EventEmitter.prototype.setMaxListeners = function setMaxListeners(n) {
+  if (typeof n !== 'number' || n < 0 || NumberIsNaN(n)) {
+    throw new RangeError('The value of "n" is out of range. It must be a non-negative number. Received ' + n + '.');
+  }
   this._maxListeners = n;
   return this;
 };
 
-EventEmitter.prototype.emit = function(type) {
-  var er, handler, len, args, i, listeners;
+function $getMaxListeners(that) {
+  if (that._maxListeners === undefined)
+    return EventEmitter.defaultMaxListeners;
+  return that._maxListeners;
+}
 
-  if (!this._events)
-    this._events = {};
+EventEmitter.prototype.getMaxListeners = function getMaxListeners() {
+  return $getMaxListeners(this);
+};
 
-  // If there is no 'error' event listener then throw.
-  if (type === 'error') {
-    if (!this._events.error ||
-        (isObject(this._events.error) && !this._events.error.length)) {
-      er = arguments[1];
-      if (er instanceof Error) {
-        throw er; // Unhandled 'error' event
-      } else {
-        // At least give some kind of context to the user
-        var err = new Error('Uncaught, unspecified "error" event. (' + er + ')');
-        err.context = er;
-        throw err;
-      }
-    }
-  }
+EventEmitter.prototype.emit = function emit(type) {
+  var args = [];
+  for (var i = 1; i < arguments.length; i++) args.push(arguments[i]);
+  var doError = (type === 'error');
 
-  handler = this._events[type];
-
-  if (isUndefined(handler))
+  var events = this._events;
+  if (events !== undefined)
+    doError = (doError && events.error === undefined);
+  else if (!doError)
     return false;
 
-  if (isFunction(handler)) {
-    switch (arguments.length) {
-      // fast cases
-      case 1:
-        handler.call(this);
-        break;
-      case 2:
-        handler.call(this, arguments[1]);
-        break;
-      case 3:
-        handler.call(this, arguments[1], arguments[2]);
-        break;
-      // slower
-      default:
-        args = Array.prototype.slice.call(arguments, 1);
-        handler.apply(this, args);
+  // If there is no 'error' event listener then throw.
+  if (doError) {
+    var er;
+    if (args.length > 0)
+      er = args[0];
+    if (er instanceof Error) {
+      // Note: The comments on the `throw` lines are intentional, they show
+      // up in Node's output if this results in an unhandled exception.
+      throw er; // Unhandled 'error' event
     }
-  } else if (isObject(handler)) {
-    args = Array.prototype.slice.call(arguments, 1);
-    listeners = handler.slice();
-    len = listeners.length;
-    for (i = 0; i < len; i++)
-      listeners[i].apply(this, args);
+    // At least give some kind of context to the user
+    var err = new Error('Unhandled error.' + (er ? ' (' + er.message + ')' : ''));
+    err.context = er;
+    throw err; // Unhandled 'error' event
+  }
+
+  var handler = events[type];
+
+  if (handler === undefined)
+    return false;
+
+  if (typeof handler === 'function') {
+    ReflectApply(handler, this, args);
+  } else {
+    var len = handler.length;
+    var listeners = arrayClone(handler, len);
+    for (var i = 0; i < len; ++i)
+      ReflectApply(listeners[i], this, args);
   }
 
   return true;
 };
 
-EventEmitter.prototype.addListener = function(type, listener) {
+function _addListener(target, type, listener, prepend) {
   var m;
+  var events;
+  var existing;
 
-  if (!isFunction(listener))
-    throw TypeError('listener must be a function');
+  if (typeof listener !== 'function') {
+    throw new TypeError('The "listener" argument must be of type Function. Received type ' + typeof listener);
+  }
 
-  if (!this._events)
-    this._events = {};
+  events = target._events;
+  if (events === undefined) {
+    events = target._events = Object.create(null);
+    target._eventsCount = 0;
+  } else {
+    // To avoid recursion in the case that type === "newListener"! Before
+    // adding it to the listeners, first emit "newListener".
+    if (events.newListener !== undefined) {
+      target.emit('newListener', type,
+                  listener.listener ? listener.listener : listener);
 
-  // To avoid recursion in the case that type === "newListener"! Before
-  // adding it to the listeners, first emit "newListener".
-  if (this._events.newListener)
-    this.emit('newListener', type,
-              isFunction(listener.listener) ?
-              listener.listener : listener);
+      // Re-assign `events` because a newListener handler could have caused the
+      // this._events to be assigned to a new object
+      events = target._events;
+    }
+    existing = events[type];
+  }
 
-  if (!this._events[type])
+  if (existing === undefined) {
     // Optimize the case of one listener. Don't need the extra array object.
-    this._events[type] = listener;
-  else if (isObject(this._events[type]))
-    // If we've already got an array, just append.
-    this._events[type].push(listener);
-  else
-    // Adding the second element, need to change to array.
-    this._events[type] = [this._events[type], listener];
-
-  // Check for listener leak
-  if (isObject(this._events[type]) && !this._events[type].warned) {
-    if (!isUndefined(this._maxListeners)) {
-      m = this._maxListeners;
+    existing = events[type] = listener;
+    ++target._eventsCount;
+  } else {
+    if (typeof existing === 'function') {
+      // Adding the second element, need to change to array.
+      existing = events[type] =
+        prepend ? [listener, existing] : [existing, listener];
+      // If we've already got an array, just append.
+    } else if (prepend) {
+      existing.unshift(listener);
     } else {
-      m = EventEmitter.defaultMaxListeners;
+      existing.push(listener);
     }
 
-    if (m && m > 0 && this._events[type].length > m) {
-      this._events[type].warned = true;
-      console.error('(node) warning: possible EventEmitter memory ' +
-                    'leak detected. %d listeners added. ' +
-                    'Use emitter.setMaxListeners() to increase limit.',
-                    this._events[type].length);
-      if (typeof console.trace === 'function') {
-        // not supported in IE 10
-        console.trace();
-      }
+    // Check for listener leak
+    m = $getMaxListeners(target);
+    if (m > 0 && existing.length > m && !existing.warned) {
+      existing.warned = true;
+      // No error code for this since it is a Warning
+      // eslint-disable-next-line no-restricted-syntax
+      var w = new Error('Possible EventEmitter memory leak detected. ' +
+                          existing.length + ' ' + String(type) + ' listeners ' +
+                          'added. Use emitter.setMaxListeners() to ' +
+                          'increase limit');
+      w.name = 'MaxListenersExceededWarning';
+      w.emitter = target;
+      w.type = type;
+      w.count = existing.length;
+      ProcessEmitWarning(w);
     }
   }
 
-  return this;
+  return target;
+}
+
+EventEmitter.prototype.addListener = function addListener(type, listener) {
+  return _addListener(this, type, listener, false);
 };
 
 EventEmitter.prototype.on = EventEmitter.prototype.addListener;
 
-EventEmitter.prototype.once = function(type, listener) {
-  if (!isFunction(listener))
-    throw TypeError('listener must be a function');
+EventEmitter.prototype.prependListener =
+    function prependListener(type, listener) {
+      return _addListener(this, type, listener, true);
+    };
 
-  var fired = false;
-
-  function g() {
-    this.removeListener(type, g);
-
-    if (!fired) {
-      fired = true;
-      listener.apply(this, arguments);
-    }
+function onceWrapper() {
+  var args = [];
+  for (var i = 0; i < arguments.length; i++) args.push(arguments[i]);
+  if (!this.fired) {
+    this.target.removeListener(this.type, this.wrapFn);
+    this.fired = true;
+    ReflectApply(this.listener, this.target, args);
   }
+}
 
-  g.listener = listener;
-  this.on(type, g);
+function _onceWrap(target, type, listener) {
+  var state = { fired: false, wrapFn: undefined, target: target, type: type, listener: listener };
+  var wrapped = onceWrapper.bind(state);
+  wrapped.listener = listener;
+  state.wrapFn = wrapped;
+  return wrapped;
+}
 
+EventEmitter.prototype.once = function once(type, listener) {
+  if (typeof listener !== 'function') {
+    throw new TypeError('The "listener" argument must be of type Function. Received type ' + typeof listener);
+  }
+  this.on(type, _onceWrap(this, type, listener));
   return this;
 };
 
-// emits a 'removeListener' event iff the listener was removed
-EventEmitter.prototype.removeListener = function(type, listener) {
-  var list, position, length, i;
-
-  if (!isFunction(listener))
-    throw TypeError('listener must be a function');
-
-  if (!this._events || !this._events[type])
-    return this;
-
-  list = this._events[type];
-  length = list.length;
-  position = -1;
-
-  if (list === listener ||
-      (isFunction(list.listener) && list.listener === listener)) {
-    delete this._events[type];
-    if (this._events.removeListener)
-      this.emit('removeListener', type, listener);
-
-  } else if (isObject(list)) {
-    for (i = length; i-- > 0;) {
-      if (list[i] === listener ||
-          (list[i].listener && list[i].listener === listener)) {
-        position = i;
-        break;
+EventEmitter.prototype.prependOnceListener =
+    function prependOnceListener(type, listener) {
+      if (typeof listener !== 'function') {
+        throw new TypeError('The "listener" argument must be of type Function. Received type ' + typeof listener);
       }
-    }
-
-    if (position < 0)
+      this.prependListener(type, _onceWrap(this, type, listener));
       return this;
+    };
 
-    if (list.length === 1) {
-      list.length = 0;
-      delete this._events[type];
-    } else {
-      list.splice(position, 1);
-    }
+// Emits a 'removeListener' event if and only if the listener was removed.
+EventEmitter.prototype.removeListener =
+    function removeListener(type, listener) {
+      var list, events, position, i, originalListener;
 
-    if (this._events.removeListener)
-      this.emit('removeListener', type, listener);
-  }
+      if (typeof listener !== 'function') {
+        throw new TypeError('The "listener" argument must be of type Function. Received type ' + typeof listener);
+      }
 
-  return this;
+      events = this._events;
+      if (events === undefined)
+        return this;
+
+      list = events[type];
+      if (list === undefined)
+        return this;
+
+      if (list === listener || list.listener === listener) {
+        if (--this._eventsCount === 0)
+          this._events = Object.create(null);
+        else {
+          delete events[type];
+          if (events.removeListener)
+            this.emit('removeListener', type, list.listener || listener);
+        }
+      } else if (typeof list !== 'function') {
+        position = -1;
+
+        for (i = list.length - 1; i >= 0; i--) {
+          if (list[i] === listener || list[i].listener === listener) {
+            originalListener = list[i].listener;
+            position = i;
+            break;
+          }
+        }
+
+        if (position < 0)
+          return this;
+
+        if (position === 0)
+          list.shift();
+        else {
+          spliceOne(list, position);
+        }
+
+        if (list.length === 1)
+          events[type] = list[0];
+
+        if (events.removeListener !== undefined)
+          this.emit('removeListener', type, originalListener || listener);
+      }
+
+      return this;
+    };
+
+EventEmitter.prototype.off = EventEmitter.prototype.removeListener;
+
+EventEmitter.prototype.removeAllListeners =
+    function removeAllListeners(type) {
+      var listeners, events, i;
+
+      events = this._events;
+      if (events === undefined)
+        return this;
+
+      // not listening for removeListener, no need to emit
+      if (events.removeListener === undefined) {
+        if (arguments.length === 0) {
+          this._events = Object.create(null);
+          this._eventsCount = 0;
+        } else if (events[type] !== undefined) {
+          if (--this._eventsCount === 0)
+            this._events = Object.create(null);
+          else
+            delete events[type];
+        }
+        return this;
+      }
+
+      // emit removeListener for all listeners on all events
+      if (arguments.length === 0) {
+        var keys = Object.keys(events);
+        var key;
+        for (i = 0; i < keys.length; ++i) {
+          key = keys[i];
+          if (key === 'removeListener') continue;
+          this.removeAllListeners(key);
+        }
+        this.removeAllListeners('removeListener');
+        this._events = Object.create(null);
+        this._eventsCount = 0;
+        return this;
+      }
+
+      listeners = events[type];
+
+      if (typeof listeners === 'function') {
+        this.removeListener(type, listeners);
+      } else if (listeners !== undefined) {
+        // LIFO order
+        for (i = listeners.length - 1; i >= 0; i--) {
+          this.removeListener(type, listeners[i]);
+        }
+      }
+
+      return this;
+    };
+
+function _listeners(target, type, unwrap) {
+  var events = target._events;
+
+  if (events === undefined)
+    return [];
+
+  var evlistener = events[type];
+  if (evlistener === undefined)
+    return [];
+
+  if (typeof evlistener === 'function')
+    return unwrap ? [evlistener.listener || evlistener] : [evlistener];
+
+  return unwrap ?
+    unwrapListeners(evlistener) : arrayClone(evlistener, evlistener.length);
+}
+
+EventEmitter.prototype.listeners = function listeners(type) {
+  return _listeners(this, type, true);
 };
 
-EventEmitter.prototype.removeAllListeners = function(type) {
-  var key, listeners;
-
-  if (!this._events)
-    return this;
-
-  // not listening for removeListener, no need to emit
-  if (!this._events.removeListener) {
-    if (arguments.length === 0)
-      this._events = {};
-    else if (this._events[type])
-      delete this._events[type];
-    return this;
-  }
-
-  // emit removeListener for all listeners on all events
-  if (arguments.length === 0) {
-    for (key in this._events) {
-      if (key === 'removeListener') continue;
-      this.removeAllListeners(key);
-    }
-    this.removeAllListeners('removeListener');
-    this._events = {};
-    return this;
-  }
-
-  listeners = this._events[type];
-
-  if (isFunction(listeners)) {
-    this.removeListener(type, listeners);
-  } else if (listeners) {
-    // LIFO order
-    while (listeners.length)
-      this.removeListener(type, listeners[listeners.length - 1]);
-  }
-  delete this._events[type];
-
-  return this;
-};
-
-EventEmitter.prototype.listeners = function(type) {
-  var ret;
-  if (!this._events || !this._events[type])
-    ret = [];
-  else if (isFunction(this._events[type]))
-    ret = [this._events[type]];
-  else
-    ret = this._events[type].slice();
-  return ret;
-};
-
-EventEmitter.prototype.listenerCount = function(type) {
-  if (this._events) {
-    var evlistener = this._events[type];
-
-    if (isFunction(evlistener))
-      return 1;
-    else if (evlistener)
-      return evlistener.length;
-  }
-  return 0;
+EventEmitter.prototype.rawListeners = function rawListeners(type) {
+  return _listeners(this, type, false);
 };
 
 EventEmitter.listenerCount = function(emitter, type) {
-  return emitter.listenerCount(type);
+  if (typeof emitter.listenerCount === 'function') {
+    return emitter.listenerCount(type);
+  } else {
+    return listenerCount.call(emitter, type);
+  }
 };
 
-function isFunction(arg) {
-  return typeof arg === 'function';
+EventEmitter.prototype.listenerCount = listenerCount;
+function listenerCount(type) {
+  var events = this._events;
+
+  if (events !== undefined) {
+    var evlistener = events[type];
+
+    if (typeof evlistener === 'function') {
+      return 1;
+    } else if (evlistener !== undefined) {
+      return evlistener.length;
+    }
+  }
+
+  return 0;
 }
 
-function isNumber(arg) {
-  return typeof arg === 'number';
+EventEmitter.prototype.eventNames = function eventNames() {
+  return this._eventsCount > 0 ? ReflectOwnKeys(this._events) : [];
+};
+
+function arrayClone(arr, n) {
+  var copy = new Array(n);
+  for (var i = 0; i < n; ++i)
+    copy[i] = arr[i];
+  return copy;
 }
 
-function isObject(arg) {
-  return typeof arg === 'object' && arg !== null;
+function spliceOne(list, index) {
+  for (; index + 1 < list.length; index++)
+    list[index] = list[index + 1];
+  list.pop();
 }
 
-function isUndefined(arg) {
-  return arg === void 0;
+function unwrapListeners(arr) {
+  var ret = new Array(arr.length);
+  for (var i = 0; i < ret.length; ++i) {
+    ret[i] = arr[i].listener || arr[i];
+  }
+  return ret;
 }
 
 
@@ -6223,7 +6436,7 @@ var _tools = __webpack_require__(10);
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var Player = exports.Player = function () {
-    function Player(x, y, rgb, tool, id) {
+    function Player(x, y, rgb, tool, id, rank) {
         _classCallCheck(this, Player);
 
         this.id = id.toString(); /* Prevents calling .toString every frame */
@@ -6233,6 +6446,7 @@ var Player = exports.Player = function () {
         this.tool = _tools.tools[tool] || _tools.tools['cursor'];
         this.fx = new _Fx.Fx(tool ? tool.fxType : _Fx.PLAYERFX.NONE, { player: this });
         this.fx.setVisible(_main.misc.world.validMousePos(Math.floor(this.endX / 16), Math.floor(this.endY / 16)));
+        this.rank = rank;
 
         this.rgb = rgb;
         this.htmlRgb = _color.colorUtils.toHTML(_color.colorUtils.u24_888(rgb[0], rgb[1], rgb[2]));
@@ -6241,19 +6455,20 @@ var Player = exports.Player = function () {
         this.clr = _color.colorUtils.toHTML(this.clr);
 
         var playerListEntry = document.createElement("tr");
-        playerListEntry.innerHTML = "<td>" + this.id + "</td><td>" + Math.floor(x / 16) + "</td><td>" + Math.floor(y / 16) + "</td>";
+        playerListEntry.innerHTML = "<td>" + this.id + "</td><td>" + Math.floor(x / 16) + "</td><td>" + Math.floor(y / 16) + "</td><td>" + rgb[0] + "</td><td>" + rgb[1] + "</td><td>" + rgb[2] + ('</td><td><div style="width: 10px; height: 10px; background: rgb(' + rgb[0] + ', ' + rgb[1] + ',' + rgb[2] + ')"></div></td>') + "<td>" + tool + "</td>";
         _main.playerList[this.id] = playerListEntry;
         _main.playerListTable.appendChild(playerListEntry);
     }
 
     _createClass(Player, [{
         key: 'update',
-        value: function update(x, y, rgb, tool) {
+        value: function update(x, y, rgb, tool, rank) {
             this._x.val = x;
             this._y.val = y;
             /* TODO: fix weird bug (caused by connecting before tools initialized?) */
             //console.log(tool)
             this.tool = _tools.tools[tool] || _tools.tools['cursor'];
+            this.rank = rank;
             this.fx.setRenderer((this.tool || {}).fxRenderer); // temp until fix: || {}
             this.fx.setVisible(_main.misc.world.validMousePos(Math.floor(this.endX / 16), Math.floor(this.endY / 16)));
             this.rgb = rgb;
@@ -6261,6 +6476,11 @@ var Player = exports.Player = function () {
 
             _main.playerList[this.id].childNodes[1].innerHTML = Math.floor(x / 16);
             _main.playerList[this.id].childNodes[2].innerHTML = Math.floor(y / 16);
+            _main.playerList[this.id].childNodes[3].innerHTML = rgb[0];
+            _main.playerList[this.id].childNodes[4].innerHTML = rgb[1];
+            _main.playerList[this.id].childNodes[5].innerHTML = rgb[2];
+            _main.playerList[this.id].childNodes[6].innerHTML = '<div style="width: 10px; height: 10px; background: rgb(' + rgb[0] + ', ' + rgb[1] + ',' + rgb[2] + ')"></div>';
+            _main.playerList[this.id].childNodes[7].innerHTML = tool;
         }
     }, {
         key: 'disconnect',
